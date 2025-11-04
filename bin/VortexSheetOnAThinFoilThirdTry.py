@@ -1,23 +1,3 @@
-''''
-
-We try to fix the error that had arisen from the previous try by correcting the equations such that they work for a cambered airfoil
-I will be focusing on the slope term first to see if the issue was caused by some error in that as I think that this is the only term
-that is different in the cambered airfoils and the non cambered airfoils.
-
-Here we are using some approximations such as-
-1) Considering that the angles of attack are very small <<1 rad(around 57.2 degrees). Generally we do not increase the aoa more than 10 degrees
-2)The airfoil is thin
-3)We do not use the camer line for the vortex sheet, but instead, we use the x axis. Similar is the case for the normalcy condition
-4)Small angle approximations are used for the free stream velocity
-5)The airfoil is considered to be flat
-
-interestingly, this code seems to only work with a thin symmeric airfoil. The results are consistant till the flow layer seperation takes place
-the cl dosen't seem to depend too much on some of the small errors in the airfoil. (Basically our error does not arise from this)
-The issue seems to be in the equations of A0, A1, ...
-Slope seems fine
-Movin on to the other terms in the integration
-'''
-
 import csv
 import matplotlib.pyplot as plt
 import math
@@ -110,5 +90,6 @@ for a in range(0, numberOfPoints):
     cl2 = cl2 + camberLineSlope[a] * (math.cos(tetha[a]) - 1) * (tetha[a+1] - tetha[a])
 
 cl2 = 2 * math.pi * (aoa + cl2 / math.pi)
+#We use these two methods to compare the coefficients of lift to ensure that the coefficient of lift is consistent
 print(cl)
 print(cl2)
