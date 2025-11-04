@@ -7,12 +7,13 @@
 3)The CSV file must have only 2 columns, one corrosponds to the X coordinates of the camber line, labelled X and the other corrosponds to the Y coordinates of the camber line, labelled Y.
 4)Ensure that the X and Y axes are scaled such that x varies from 0 to 100
 
-**We use some approximations such as**
+**We use some approximations such as-**
 
 1) The airfoil is considered to be thin such that the vortex of the top and the bottom surface can be merged into a single airfoil.
 2) Angles of attack is small (<10degrees). Basically we avoid stalling the airfoil
 3) The Resolution of calculations depends on the number of points that are put in the airfoil file
 
-Resources-
+**Resources-**
 https://users.encs.concordia.ca/~bvermeir/files/Py2Fly%20-%20Documentation.pdf
+
 
