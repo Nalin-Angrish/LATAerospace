@@ -1,0 +1,8 @@
+[MASTER]
+# Project-specific pylintrc
+
+[MESSAGES CONTROL]
+# Disable warnings for redefining names from an outer scope
+disable =
+  redefined-outer-name,
+  invalid-name
