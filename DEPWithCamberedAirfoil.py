@@ -1,3 +1,13 @@
+"""
+Assumptions-
+- The airfoil is thin
+- The angle of attack of the airfoil must be <<1 radian
+- The jet is considered to be a rectangle that flows over the airfoil
+- This rectangular jet is further approximated to be a vortex sheet
+
+Differences from the paper implementation-
+- The camber of the airfoil can be set to be non symmetrical
+"""
 import csv
 import matplotlib.pyplot as plt
 import math
@@ -169,3 +179,4 @@ for a in range(1, numberOfPoints):
 clNew = math.pi * (2 * newAn[0] + newAn[1])
 
 print(clNew)
+
