@@ -1,7 +1,3 @@
-"""
-We actually need to first calculate the streamline angle of the vortex after it leaves the wing and then use that 
-"""
-
 import csv
 import matplotlib.pyplot as plt
 import math
@@ -171,4 +167,5 @@ for a in range(1, numberOfPoints):
         newAn[a] = newAn[a] - camberLineSlope[b] * (tetha[b+1] - tetha[b]) * math.cos(tetha[b])
         
 clNew = math.pi * (2 * newAn[0] + newAn[1])
+
 print(clNew)
