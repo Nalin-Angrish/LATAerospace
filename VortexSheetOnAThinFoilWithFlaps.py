@@ -31,10 +31,6 @@ def returnCamberLine(camberLineFileLocation):
         for row in csv_reader:
             xCamber.append(float(row[x_index]))
             yCamber.append(float(row[y_index]))
-
-        
-    
-    
     return(xCamber, yCamber)
 
 #Angle of Attack in radians
@@ -120,4 +116,5 @@ cl2 = 2 * math.pi * (aoa + cl2 / math.pi)
 print(cl)
 
 print(cl2)
+
 
