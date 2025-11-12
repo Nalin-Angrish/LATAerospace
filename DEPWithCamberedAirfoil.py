@@ -6,7 +6,7 @@ Assumptions-
 - This rectangular jet is further approximated to be a vortex sheet
 
 Differences from the paper implementation-
-- The camber of the airfoil can be set to be non symmetrical
+- The camber of the airfoil can be a be non symmetrical airfoil
 """
 import csv
 import matplotlib.pyplot as plt
@@ -44,7 +44,7 @@ def returnCamberLine(camberLineFileLocation):
     return(xCamber, yCamber)
 
 #Angle of Attack in radians
-aoa = 0 * math.pi / 180
+aoa = 8 * math.pi / 180
 
 #Conditions
 fsv = 20 #free stream velocity in m/s
@@ -53,23 +53,25 @@ cl = 0.0 #The coefficient of lift
 
 #Flaps
 percFlap = 30 #Percentage of the wing that is a flap
-flapAngle = 20 * math.pi / 180 #angle of the 
+flapAngle = 40 * math.pi / 180 #angle of the 
 #Jet
-heightJet = 0.3 #This is responsable for setting the height of the jet (this value should include the contraction effects of the wake)
-nExp = -0.36
-rhoJet = 1.3
+heightJet = 0.2 #This is responsable for setting the height of the jet (this value should include the contraction effects of the wake)
+nExp = -0.1 #This value mus be found practically
+rhoJet = 1.1
 velocityJet = 50
+deltaCjOverride = 0 #If this is non zero, the value of the calulated Cj will be overwritten
 
 numberOfPoints = 0 # It is used to find the number of points in the CSV file which stores the chordline coordinates
-normalizationVal = 0.01
+normalizationVal = 0.01 #This is used to normalize all the x values of the airfoil such that they will be between 0 and 1
 airfoilLen = 1.0 #Length of the airfoil or the chord length
 liftPerSpan = 0.0 #The output of the total lift that is generated per span is stored here
+
 #Empties to get the camber angles
 xCamber = []
 yCamber = []
 
 
-xCamber, yCamber = returnCamberLine(r"Airfoils\naca2412Camber.csv")
+xCamber, yCamber = returnCamberLine(r"Airfoils\NACA23015.csv") #This should be the path to where the airfoil is stored
 #We scale the values such that we can use it in our equations (normalization)
 yCamber = [number * 1 * normalizationVal for number in yCamber]
 xCamber = [number * 1 * normalizationVal for number in xCamber] 
@@ -96,7 +98,7 @@ tetha = []
 
 for a in range (0, numberOfPoints):
     tetha.append(np.arccos(1 - 2 * xCamber[a]))
-tetha.append(tetha[a] + 0.001)
+tetha.append(math.pi)
 
 for a in range(0, numberOfPoints):
     anot = anot + camberLineSlope[a] * (tetha[a+1] - tetha[a]) 
@@ -130,7 +132,7 @@ mx = 1
 step = 0.005
 x = []
 jetCurveTetha = []
-Acoef = camberLineSlope[numberOfPoints-2]
+Acoef = camberLineSlope[numberOfPoints-2] - aoa
 yShift =  Acoef * airfoilLen / nExp - yCamber[-1]
 
 for a in np.arange(0, mx + step, step):
@@ -159,29 +161,32 @@ newAn = []
 
 deltaJ = rhoJet * velocityJet * velocityJet * heightJet - rho * fsv * fsv * heightJet
 deltaCj = deltaJ / (rho * fsv * fsv * airfoilLen)
+if deltaCjOverride != 0:
+    deltaCj = deltaCjOverride
 tethaIntegral = []
 cIntegral = []
 newAn.append(0)
 for a in range(0, numberOfPoints):
-    for xPos in range(0, int(mx/step)):
-        if(x[xPos] != (airfoilLen / 2 * (1 - math.cos(tetha[a])))):
+    for xPos in range(0, int(mx/step)-1):
+        if(x[xPos] > (0.0000000001 + (airfoilLen / 2 * (1 - math.cos(tetha[a]))))) or (x[xPos] < (-0.000000001 + (airfoilLen / 2 * (1 - math.cos(tetha[a]))))):
             newAn[0] = newAn[0] +  1 / math.pi * (
-                -deltaCj / (4 * math.pi) * jetCurveTetha[xPos] * (x[xPos+1] - x[xPos]) / (x[xPos] - airfoilLen / 2 * (1 - math.cos(tetha[a]))) * (tetha[a+1] - tetha[a])
+                deltaCj / (4 * math.pi) * (jetCurveTetha[xPos+1] - jetCurveTetha[xPos])  / (x[xPos] - airfoilLen / 2 * (1 - math.cos(tetha[a]))) * (tetha[a+1] - tetha[a])
                 )
         else:
             newAn[0] = newAn[0] +  1 / math.pi * (
-                -deltaCj / (4 * math.pi) * jetCurveTetha[xPos] * (tetha[a+1] - tetha[a])
+                deltaCj / (4 * math.pi) * (jetCurveTetha[xPos+1] - jetCurveTetha[xPos]) * (tetha[a+1] - tetha[a])
                 )   
     newAn[0] = newAn[0] - 1/math.pi * camberLineSlope[a] * (tetha[a+1] - tetha[a])
 newAn[0] = aoa + newAn[0]
 
 for a in range(1, numberOfPoints):
     for b in range(0, numberOfPoints):
-        for xPos in range(0, int(mx/step)):
+        for xPos in range(0, int(mx/step)-1):
             newAn.append(2 / math.pi * (
-                -deltaCj / ( math.pi) * jetCurveTetha[xPos] * (x[xPos+1] - x[xPos]) / (0.000000001 +  x[xPos] - airfoilLen / 2 * (1 - math.cos(tetha[b]))  ) * (tetha[b+1] - tetha[b]) * math.cos(a * tetha[b]) 
+                -1 * deltaCj / ( math.pi) * (jetCurveTetha[xPos+1] - jetCurveTetha[xPos]) / (0.000000001 +  x[xPos] - airfoilLen / 2 * (1 - math.cos(tetha[b]))  ) * (tetha[b+1] - tetha[b]) * math.cos(a * tetha[b]) 
             ))
-        newAn[a] = newAn[a] + 1/math.pi * camberLineSlope[b] * (tetha[b+1] - tetha[b]) * math.cos(tetha[b])
+        newAn[a] = newAn[a] + 2/math.pi * camberLineSlope[b] * (tetha[b+1] - tetha[b]) * math.cos(tetha[b])
+
 clNew = math.pi * (2 * newAn[0] + newAn[1])
 
 print("The coefficient of lift of our blown airfoil will be =", clNew)
