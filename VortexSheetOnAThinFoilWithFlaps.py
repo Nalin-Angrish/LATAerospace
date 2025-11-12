@@ -114,8 +114,9 @@ for N in range(0, numberOfPoints):
 cl = math.pi * (2 * anot + an[1])
 cl2 = 0
 for a in range(0, numberOfPoints):
-    cl2 = cl2 + camberLineSlope[a] * (math.cos(tetha[a]) - 1) * (tetha[a+1] - tetha[a])
+    cl2 = cl2 - camberLineSlope[a] * (math.cos(tetha[a]) - 1) * (tetha[a+1] - tetha[a])
 
 cl2 = 2 * math.pi * (aoa + cl2 / math.pi)
 print(cl)
+
 print(cl2)
