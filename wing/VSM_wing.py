@@ -3,8 +3,8 @@ import numpy as np
 
 from helper import returnCamberLine
 
-#Angle of Attack in radians
-aoa = 10 * math.pi / 180
+# Angle of Attack in radians
+aoa = 8 * math.pi / 180
 
 # Normalized camber line coordinates
 xCamber, yCamber = returnCamberLine("../data/naca2412.csv")
