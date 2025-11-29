@@ -328,12 +328,12 @@ if __name__ == "__main__":
     
     # Propeller parameters
     B = 3
-    R = 1.5
-    R_hub = 0.375
+    R = 0.4
+    R_hub = 0.01
     rho = 1.225
-    rpm = 500
+    rpm = 5000
     V_start = 0.0        # Nominal RPM
-    V_end = 20.0 
+    V_end = 85.0 
     step = 1          # Low velocity for propeller mode
     N = 10  # Blade elements
     A = math.pi * (R**2 )
@@ -388,4 +388,9 @@ if __name__ == "__main__":
     plt.ylabel('$eta$')
     plt.title('thrust coeff vs Advance Ratio')
     plt.show()
- 
+    
+    df['Thrust_per_unit_Area'] = df['Thrust (N)'] / A
+    df.plot(x='Velocity (m/s)', y='Thrust_per_unit_Area', legend=None, style='b-o')
+    plt.title('Thrust vs Velocity')
+    plt.show()
+    df.to_csv('bemt_output.csv', index=False, columns=['Velocity (m/s)', 'Thrust_per_unit_Area'])
