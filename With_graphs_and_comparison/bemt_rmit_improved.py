@@ -3,6 +3,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 import pandas as pd
 import matplotlib.pyplot as plt
+from xfoil_final import build_airfoil_database, ViternaExtrapolator, XFoilRunner
+import json
 
 def load_airfoil_data(airfoil_file_path):
     try:
@@ -328,10 +330,11 @@ if __name__ == "__main__":
     
     # Propeller parameters
     B = 3
-    R = 0.4
+    R = 0.5
     R_hub = 0.01
     rho = 1.225
-    rpm = 5000
+    rpm = 3000
+    V = 20
     V_start = 0.0        # Nominal RPM
     V_end = 85.0 
     step = 1          # Low velocity for propeller mode
@@ -355,42 +358,48 @@ if __name__ == "__main__":
     df = pd.DataFrame(columns=['Velocity (m/s)', 'Thrust (N)', 'Torque (Nm)', 'Power (W)',
                                'Efficiency', 'CT', 'CP', 'J'])
     print(f"\nOperating Condition:")
-    print(f"  Velocity: {V_start} to {V_end} m/s")
+    # print(f"  Velocity: {V_start} to {V_end} m/s")
     print(f"  RPM: {rpm}")
     print(f"  Blade elements: {N}")
     
-    for V in np.arange(V_start, V_end, step):
-        J = V / (n * D)
-        T, Q, diags, nodes = integrate_blade(
-            B, chord_fun, theta_fun, R, R_hub, N, rho, V, rpm,
-            pitch_beta=0.0, alpha0_fun=alpha0_fun,
-            Cl_alpha=2*math.pi, Cd0=0.008, Cd_k=0.02
-        )
-        P = Q * (2.0 * math.pi * n)  # Power in Watts
-        eta = (T * V) / P if P > 1e-6 else 0.0
-        CT = T / (rho * n**2 * D**4)
-        CP = P / (rho * n**3 * D**5)
-        df = df.append({'Velocity (m/s)': V, 'Thrust (N)': T, 'Torque (Nm)': Q,
-                        'Power (W)': P, 'Efficiency': eta, 'CT': CT, 'CP': CP, 'J': J}, ignore_index=True)
-        print(f"\nVelocity: {V} m/s")
-        print(f"  Thrust: {T:.2f} N")
-        print(f"  Torque: {Q:.2f} Nm")
-        print(f"  Power: {P/1000:.2f} kW")
-    ax = df.plot(x='J', y='CT', legend=None, style='b-o')
-    exp_data.plot(x='J', y='CT', style='r-s', ax=ax, legend=None)
-    df.plot(x='J',y='CP',ax=ax,legend=None)
-    exp_data.plot(x='J',y='CP',ax=ax)
-    plt.ylabel('$C_T$ , $C_P$')
-    ax2 = ax.twinx()
-    df.plot(x='J', y='Efficiency', style='g-o', ax=ax, legend=None)
-    exp_data.plot(x='J', y='eta', style='m-s', ax=ax2, legend=None)
-    plt.xlabel('J')
-    plt.ylabel('$eta$')
-    plt.title('thrust coeff vs Advance Ratio')
-    plt.show()
     
-    df['Thrust_per_unit_Area'] = df['Thrust (N)'] / A
-    df.plot(x='Velocity (m/s)', y='Thrust_per_unit_Area', legend=None, style='b-o')
-    plt.title('Thrust vs Velocity')
-    plt.show()
-    df.to_csv('bemt_output.csv', index=False, columns=['Velocity (m/s)', 'Thrust_per_unit_Area'])
+    J = V / (n * D)
+    T, Q, diags, nodes = integrate_blade(
+        B, chord_fun, theta_fun, R, R_hub, N, rho, V, rpm,
+        pitch_beta=0.0, alpha0_fun=alpha0_fun,
+        Cl_alpha=2*math.pi, Cd0=0.008, Cd_k=0.02
+    )
+    P = Q * (2.0 * math.pi * n)  # Power in Watts
+    eta = (T * V) / P if P > 1e-6 else 0.0
+    CT = T / (rho * n**2 * D**4)
+    CP = P / (rho * n**3 * D**5)
+    df = df.append({'Velocity (m/s)': V, 'Thrust (N)': T, 'Torque (Nm)': Q,
+                    'Power (W)': P, 'Efficiency': eta, 'CT': CT, 'CP': CP, 'J': J}, ignore_index=True)
+    print(f"\nVelocity: {V} m/s")
+    print(f"  Thrust: {T:.2f} N")
+    print(f"  Torque: {Q:.2f} Nm")
+    print(f"  Power: {P/1000:.2f} kW")
+    pts = [diag['a'] for diag in diags if 'a' in diag]
+    av = np.average(pts)
+    print(av)
+    # avg_a = np.average(av)
+    # print(f"  Average Induction Factor: {avg_a:.4f}")
+    # Average_axial_velocity = V * (1 + avg_a)
+    # ax = df.plot(x='J', y='CT', legend=None, style='b-o')
+    # exp_data.plot(x='J', y='CT', style='r-s', ax=ax, legend=None)
+    # df.plot(x='J',y='CP',ax=ax,legend=None)
+    # exp_data.plot(x='J',y='CP',ax=ax)
+    # plt.ylabel('$C_T$ , $C_P$')
+    # ax2 = ax.twinx()
+    # df.plot(x='J', y='Efficiency', style='g-o', ax=ax, legend=None)
+    # exp_data.plot(x='J', y='eta', style='m-s', ax=ax2, legend=None)
+    # plt.xlabel('J')
+    # plt.ylabel('$eta$')
+    # plt.title('thrust coeff vs Advance Ratio')
+    # plt.show()
+    
+    # df['Thrust_per_unit_Area'] = df['Thrust (N)'] / A
+    # df.plot(x='Velocity (m/s)', y='Thrust_per_unit_Area', legend=None, style='b-o')
+    # plt.title('Thrust vs Velocity')
+    # plt.show()
+    # df.to_csv('bemt_output.csv', index=False, columns=['Velocity (m/s)', 'Thrust_per_unit_Area'])
