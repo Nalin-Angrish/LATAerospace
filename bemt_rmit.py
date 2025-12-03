@@ -341,7 +341,7 @@ if __name__ == "__main__":
     D = 2 * R
 
     # Blade geometry functions
-    chord_fun = lambda r: 0.2
+    chord_fun = lambda r: 0.000000*r**4 + 0.493827*r**3 - 1.750000*r**2 + 1.835317*r - 0.371763
     # theta_fun = lambda r: math.radians(20.0) * (1 - (r - R_hub)/(R - R_hub))  # 20° twist
     theta_fun = lambda r: 0.31
     alpha0_fun = lambda r: 0.0
