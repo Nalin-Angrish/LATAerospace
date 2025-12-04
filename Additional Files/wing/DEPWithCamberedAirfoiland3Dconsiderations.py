@@ -309,7 +309,7 @@ wingspan = 10
 Acoefs = []
 tetha = []
 chordVar = []
-ar = 10
+ar = 10     #Aspect Ratio
 chordVar = chordVarFunc(numberOfSpanControlPoints)
 aoaKnot = []
 slopeM = []
@@ -362,5 +362,8 @@ totCl = 0
 for a in range(0, len(tetha) - 1):
     totCl += tau[a] * 2 / (fsv) * (tetha[a+1] - tetha[a])
 
-print(totCl, cl1, cl1old)
+inducedDrag = 0
+for a in range(0, len(tetha) - 1):
+    inducedDrag += math.pi * ar * a * Acoefs[a] * Acoefs[a]
+print(totCl, inducedDrag, cl1, cl1old)
 print(twoDimentionalAirfoil(10 * math.pi / 180))
