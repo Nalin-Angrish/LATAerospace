@@ -5,13 +5,13 @@ Here we try to implement the whatever we have learnt in the thin airfoil theory 
 import math
 
 velJet = 50
-heightJet = 0.2
-rhoJet = 1.1
-rhoinf = 1
+heightJet = 0.15 * (1/2) * (20 / velJet + 1) #This is responsable for setting the height of the jet (this value should include the contraction effects of the wake)
+rhoJet = 1.225
+rhoinf = 1.225
 chord = 1
 Vinf = 20
 aoa = 7.5 * math.pi / 180
-jetDeflection = 7.5 * math.pi / 180
+jetDeflection = 30 * math.pi / 180
 
 jDash = rhoJet * velJet * velJet * heightJet
 cj = jDash / (rhoinf * Vinf * Vinf * chord)

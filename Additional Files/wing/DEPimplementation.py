@@ -54,16 +54,17 @@ cl = 0.0 #The coefficient of lift
 
 #Flaps
 percFlap = 30 #Percentage of the wing that is a flap
-flapAngle = 10 * math.pi / 180 #angle of the 
+flapAngle = 30 * math.pi / 180 #angle of the 
 #Jet
-heightJet = 0.2 #This is responsable for setting the height of the jet (this value should include the contraction effects of the wake)
-rhoJet = 1.1
-velocityJet = 20
+heightJet = 0.6 #This is responsable for setting the height of the jet (this value should include the contraction effects of the wake)
+nExp = -0.1
+rhoJet = 1.225
+velocityJet = 20.639
 deltaCjOverride = 0 #If this is non zero, the value of the calulated Cj will be overwritten
 
 numberOfPoints = 0 # It is used to find the number of points in the CSV file which stores the chordline coordinates
 normalizationVal = 0.01 #This is used to normalize all the x values of the airfoil such that they will be between 0 and 1
-airfoilLen = 1 #Length of the airfoil or the chord length
+airfoilLen = 0.4 #Length of the airfoil or the chord length
 liftPerSpan = 0.0 #The output of the total lift that is generated per span is stored here
 
 #Empties to get the camber angles

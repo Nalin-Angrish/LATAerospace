@@ -36,31 +36,6 @@ def returnCamberLine(camberLineFileLocation):
             yCamber.append(float(row[y_index]))
     return(xCamber, yCamber)
 
-#Conditions
-fsv = 20 #free stream velocity in m/s
-rho = 1.125
-cl = 0.0 #The coefficient of lift
-
-#Flaps
-percFlap = 30 #Percentage of the wing that is a flap
-flapAngle = 30 * math.pi / 180 #angle of the flaps
-
-#Jet
-propellerDia = 0.1
-velocityJet = 35
-heightJet = (1/2) * (fsv / velocityJet + 1) * propellerDia #This is responsable for setting the height of the jet (this value should include the contraction effects of the wake)
-rhoJet = 1.125
-deltaCjOverride = 0 #If this is non zero, the value of the calulated Cj will be overwritten
-
-numberOfPoints = 0 # It is used to find the number of points in the CSV file which stores the chordline coordinates
-normalizationVal = 0.01 #This is used to normalize all the x values of the airfoil such that they will be between 0 and 1
-airfoilLen = 1 #Length of the airfoil or the chord length
-liftPerSpan = 0.0 #The output of the total lift that is generated per span is stored here
-
-#Empties to get the camber angles
-xCamber = []
-yCamber = []
-
 #this function is responsible for mapping the jet of the blown flap
 def jetModel(lastCamberLineSlope, lastCamberLine, aoa):
     #we define the function of the jet and attach it to the back of the flap
@@ -96,7 +71,7 @@ def jetModel(lastCamberLineSlope, lastCamberLine, aoa):
     return(jetXfinaldash, jetYfinaldash, len(jetXfinal))
 
 def twoDimentionalAirfoil(aoa):
-    xCamber, yCamber = returnCamberLine(r"Airfoils\NACA23015.csv") #This should be the path to where the airfoil is stored
+    xCamber, yCamber = returnCamberLine(r"Airfoils\NACA4412.csv") #This should be the path to where the airfoil is stored
     #We scale the values such that we can use it in our equations (normalization). We need all the values of the camber to be between 0 and 1. 
     yCamber = [number * normalizationVal for number in yCamber]
     xCamber = [number * normalizationVal for number in xCamber] 
@@ -209,6 +184,31 @@ def twoDimentionalAirfoil(aoa):
     clNew = math.pi * (2 * newAn[0] + newAn[1])
     return(clNew, cl)
 
+#Conditions
+fsv = 20 #free stream velocity in m/s
+rho = 1.225
+rhoJet = 1.1
+percFlap = 38 #Percentage of the wing that is a flap
+flapAngle = 25 * math.pi / 180 #angle of the flaps
+propellerDia = 0.13
+velocityJet = 50
+airfoilLen = 0.09 #Length of the airfoil or the chord length
+wingspan = 1
+AoA = 7 * math.pi / 180  #Angle of attack in radians
+#Flaps
+
+#Jet
+heightJet = (1/2) * (fsv / velocityJet + 1) * propellerDia #This is responsable for setting the height of the jet (this value should include the contraction effects of the wake)
+deltaCjOverride = 0 #If this is non zero, the value of the calulated Cj will be overwritten
+
+numberOfPoints = 0 # It is used to find the number of points in the CSV file which stores the chordline coordinates
+normalizationVal = 0.01 #This is used to normalize all the x values of the airfoil such that they will be between 0 and 1
+liftPerSpan = 0.0 #The output of the total lift that is generated per span is stored here
+cl = 0.0 #The coefficient of lift
+
+#Empties to get the camber angles
+xCamber = []
+yCamber = []
 
 cl1, cl1old= twoDimentionalAirfoil(1*math.pi / 180)
 cl2, cl2old= twoDimentionalAirfoil(2 * math.pi / 180)
@@ -227,17 +227,13 @@ def aoaVarFunc(numberOfSpanControlPoints):
     aoa = []
 
     for a in range(0, numberOfSpanControlPoints):
-        aoa.append(5 * math.pi / 180)
+        aoa.append(AoA)
     return(aoa)
-
-cl1, cl1old= twoDimentionalAirfoil(1*math.pi / 180)
-cl2, cl2old= twoDimentionalAirfoil(2 * math.pi / 180)
 
 numberOfSpanControlPoints = 100
 jetWidth = 5    #This is the width of the individual region that is under the effect of the jet
 openWidth = 0    #This is the width of the individual region that is not under the effect of the jet
 #Both above quantities are expressed in terms of wingspan / numberOfSpanPoints
-wingspan = 10
 
 Acoefs = []
 tetha = []
@@ -288,5 +284,6 @@ cl=coeff[0]*wingspan*math.pi/airfoilLen
 cdi=0
 for i in range(0,len(coeff)):
     cdi+=(2*i+1)*(coeff[i]*coeff[i])*math.pi*wingspan/airfoilLen
-print(cl,"and", cdi)
-
+print("Lift Coefficient CL:", cl)
+print("Induced Drag Coefficient CDi:", cdi)
+print("Lift to Drag Ratio L/D:", cl/cdi)
