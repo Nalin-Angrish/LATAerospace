@@ -29,16 +29,6 @@ def returnCamberLine(camberLineFileLocation):
             xCamber.append(float(row[x_index]))
             yCamber.append(float(row[y_index]))
 
-    '''  
-    plt.figure(figsize=(8, 6))
-    plt.plot(xCamber, yCamber, marker='o', linestyle='-', color='b')  # Line plot with markers
-    
-    #   Labels and title
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.title('Plot of Y vs X')
-    plt.grid(True)
-    '''
     # Show the plot
     #plt.show()
     
@@ -54,17 +44,16 @@ cl = 0.0 #The coefficient of lift
 
 #Flaps
 percFlap = 30 #Percentage of the wing that is a flap
-flapAngle = 30 * math.pi / 180 #angle of the 
+flapAngle = 40 * math.pi / 180 #angle of the 
 #Jet
-heightJet = 0.6 #This is responsable for setting the height of the jet (this value should include the contraction effects of the wake)
-nExp = -0.1
-rhoJet = 1.225
-velocityJet = 20.639
+heightJet = 0.2 #This is responsable for setting the height of the jet (this value should include the contraction effects of the wake)
+rhoJet = 1.1
+velocityJet = 20
 deltaCjOverride = 0 #If this is non zero, the value of the calulated Cj will be overwritten
 
 numberOfPoints = 0 # It is used to find the number of points in the CSV file which stores the chordline coordinates
 normalizationVal = 0.01 #This is used to normalize all the x values of the airfoil such that they will be between 0 and 1
-airfoilLen = 0.4 #Length of the airfoil or the chord length
+airfoilLen = 1 #Length of the airfoil or the chord length
 liftPerSpan = 0.0 #The output of the total lift that is generated per span is stored here
 
 #Empties to get the camber angles
@@ -172,17 +161,6 @@ def twoDimentionalAirfoil(aoa):
     jetCurveTetha = []
     Acoef = camberLineSlope[numberOfPoints-2] - aoa
 
-    '''
-    mx = 1
-    step = 0.005
-    yShift =  Acoef * airfoilLen / nExp - yCamber[-1]
-    for a in np.arange(0, mx + step, step):
-        x.append( ((mx - a) / airfoilLen)  + 0.000000000000000000001)
-    for a in range(0, int(mx / step)):
-        jetCurveTetha.append(Acoef * pow(math.e, nExp * (1 / (x[a]) - airfoilLen) / airfoilLen))
-        jetCurve.append((Acoef * airfoilLen / nExp) * (pow(math.e, nExp * (1 / (x[a]) - airfoilLen) / airfoilLen)) - yShift)
-    '''
-
     jetappendX, jetappendY, jetInteractionPoints = jetModel(camberLineSlope[-1], yCamber[-1], aoa)
     for a in range (0, jetInteractionPoints):
         jetCurve.append(jetappendY[a])
@@ -197,19 +175,6 @@ def twoDimentionalAirfoil(aoa):
     totalX.extend(xCamber)
     totalX.extend(x)
 
-    '''
-    for a in range(0, int(mx/step)):
-        totalX.append( 1 / x[a])
-    plt.clf()
-    plt.plot(totalX, jetCurve, marker='o', linestyle='-', color='b')  # Line plot with markers
-
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.title('Plot of Y vs X')
-    plt.grid(True)
-
-    plt.show()
-    '''
     newAn = []
     tetha = []
     for a in range(0, numberOfPoints):
@@ -251,121 +216,3 @@ def twoDimentionalAirfoil(aoa):
     return(clNew, cl)
 
 print(twoDimentionalAirfoil(10*math.pi / 180))
-
-cl1, cl1old= twoDimentionalAirfoil(1*math.pi / 180)
-cl2, cl2old= twoDimentionalAirfoil(2 * math.pi / 180)
-
-slope = (cl2 - cl1) / (1 * math.pi / 180)
-print(slope)
-'''
-clAll = []
-angles = []
-for a in range(-100, 100):
-    b, d = twoDimentionalAirfoil(a / 10 * math.pi / 180)
-    clAll.append(d)
-    angles.append(a)
-'''
-#we begin the 3D analysis beyond this part
-
-def chordVarFunc(numberOfSpanControlPoints):
-    span = []
-
-    for a in range(0,numberOfSpanControlPoints):
-        span.append(1)
-    return(span)
-
-def aoaVarFunc(numberOfSpanControlPoints):
-    aoa = []
-
-    for a in range(0, numberOfSpanControlPoints):
-        aoa.append(1 * math.pi / 180)
-    return(aoa)
-
-cl1, cl1old= twoDimentionalAirfoil(1*math.pi / 180)
-cl2, cl2old= twoDimentionalAirfoil(2 * math.pi / 180)
-
-'''
-clAll = []
-angles = []
-for a in range(-100, 100):
-    b, d = twoDimentionalAirfoil(a / 10 * math.pi / 180)
-    clAll.append(d)
-    angles.append(a)
-
-plt.clf()
-plt.plot(angles, clAll, marker='o', linestyle='-', color='b')  # Line plot with markers
-
-plt.xlabel('X')
-plt.ylabel('Y')
-plt.title('Plot of Y vs X')
-plt.grid(True)
-plt.show()
-'''
-numberOfSpanControlPoints = 1000
-jetWidth = 5    #This is the width of the individual region that is under the effect of the jet
-openWidth = 0    #This is the width of the individual region that is not under the effect of the jet
-#Both above quantities are expressed in terms of wingspan / numberOfSpanPoints
-wingspan = 10
-
-Acoefs = []
-tetha = []
-chordVar = []
-ar = 10     #Aspect Ratio
-chordVar = chordVarFunc(numberOfSpanControlPoints)
-aoaKnot = []
-slopeM = []
-aoaVar = []
-aoaVar = aoaVarFunc(numberOfSpanControlPoints)
-b = 0
-print((cl2old - cl1old) / (1 * math.pi / 180), (cl2 - cl1) / (1 * math.pi / 180))
-for a in range (0, numberOfSpanControlPoints):
-    if b < openWidth:
-        slopeM.append((cl2old - cl1old) / (1 * math.pi / 180))
-        b+=1
-    else:
-        slopeM.append((cl2 - cl1) / (1 * math.pi / 180))
-        b+=1
-        if b == jetWidth + openWidth:
-            b = 0
-b = 0
-for a in range(0, numberOfSpanControlPoints):
-    if b < openWidth:
-        aoaKnot.append(1 * math.pi / 180 - cl1old / slopeM[a])
-        b+=1
-    else:
-        aoaKnot.append(1 * math.pi / 180 - cl1 / slopeM[a])
-        b+=1
-        if b == jetWidth + openWidth:
-            b = 0
-
-resolution = 100
-for a in range(0, int(math.pi * resolution)):
-    tetha.append(a/resolution)
-t = 0
-u = 0
-for b in range(0, numberOfSpanControlPoints - 1):
-    for a in range(0, len(tetha) - 1):
-        t += (math.sin(tetha[a]) * math.sin(b * tetha[a]) * (aoaVar[b] - aoaKnot[b]) * (tetha[a+1] - tetha[a]))
-        u += (4 * wingspan / (slopeM[b] * chordVar[b])) * math.sin(tetha[a]) * (tetha[a+1] - tetha[a])
-    Acoefs.append(2 / math.pi * (t / (u + b / 2 + 0.000000000000001)))
-    t = 0
-    u = 0
-
-d = 0
-tau = []
-for b in range(0, len(tetha) - 1):
-    for a in range(0, numberOfSpanControlPoints - 1):
-        d += 2 * wingspan * fsv * Acoefs[a] * math.sin(a * tetha[b])
-    tau.append(d)
-    d = 0
-
-totCl = 0
-for a in range(0, len(tetha) - 1):
-    totCl += tau[a] * 2 / (fsv) * (tetha[a+1] - tetha[a])
-
-inducedDrag = 0
-for a in range(0, len(tetha) - 1):
-    inducedDrag += math.pi * ar * a * Acoefs[a] * Acoefs[a]
-
-print(totCl, inducedDrag, cl1, cl1old)
-print(twoDimentionalAirfoil(10 * math.pi / 180))
