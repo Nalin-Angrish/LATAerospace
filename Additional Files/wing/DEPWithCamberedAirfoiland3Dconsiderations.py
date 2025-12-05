@@ -2,8 +2,7 @@
 Assumptions-
 - The airfoil is thin
 - The angle of attack of the airfoil must be <<1 radian
-- The jet is considered to be a rectangle that flows over the airfoil
-- This rectangular jet is further approximated to be a vortex sheet
+- This jet is further approximated to be a vortex sheet
 
 Differences from the paper implementation-
 - The camber of the airfoil can be a be non symmetrical airfoil
@@ -14,6 +13,7 @@ import matplotlib.pyplot as plt
 import math
 import numpy as np
 
+#returns the un normalised camber points of the airfoil
 def returnCamberLine(camberLineFileLocation):
     with open(camberLineFileLocation, mode='r', encoding='utf-8') as file:
         # Create a csv.reader object to iterate over lines in the CSV file
@@ -28,37 +28,22 @@ def returnCamberLine(camberLineFileLocation):
         for row in csv_reader:
             xCamber.append(float(row[x_index]))
             yCamber.append(float(row[y_index]))
-
-    '''  
-    plt.figure(figsize=(8, 6))
-    plt.plot(xCamber, yCamber, marker='o', linestyle='-', color='b')  # Line plot with markers
-    
-    #   Labels and title
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.title('Plot of Y vs X')
-    plt.grid(True)
-    '''
-    # Show the plot
-    #plt.show()
-    
     return(xCamber, yCamber)
-
-#Angle of Attack in radians
-#aoa = 1 * math.pi / 180
 
 #Conditions
 fsv = 20 #free stream velocity in m/s
-rho = 1.225
+rho = 1.125
 cl = 0.0 #The coefficient of lift
 
 #Flaps
 percFlap = 30 #Percentage of the wing that is a flap
-flapAngle = 40 * math.pi / 180 #angle of the 
+flapAngle = 30 * math.pi / 180 #angle of the flaps
+
 #Jet
-heightJet = 0.2 #This is responsable for setting the height of the jet (this value should include the contraction effects of the wake)
-rhoJet = 1.1
-velocityJet = 20
+propellerDia = 0.1
+velocityJet = 35
+heightJet = (1/2) * (fsv / velocityJet + 1) * propellerDia #This is responsable for setting the height of the jet (this value should include the contraction effects of the wake)
+rhoJet = 1.125
 deltaCjOverride = 0 #If this is non zero, the value of the calulated Cj will be overwritten
 
 numberOfPoints = 0 # It is used to find the number of points in the CSV file which stores the chordline coordinates
@@ -70,12 +55,13 @@ liftPerSpan = 0.0 #The output of the total lift that is generated per span is st
 xCamber = []
 yCamber = []
 
+#this function is responsible for mapping the jet of the blown flap
 def jetModel(lastCamberLineSlope, lastCamberLine, aoa):
     #we define the function of the jet and attach it to the back of the flap
     #we first try to find the x position where the angle between the fsv and the jet is the same as the flap and fsv
     jetLength = 100 #This defines how long the jet is. It should be infinite, but eventually it merges with the fsv and its contribution reduces
     jetResolution = 1 #This defines the step size of the jet
-    jetCoeffA = 2.05
+    jetCoeffA = 2.05    #These are two coefficients that are responsible for the jet
     jetCoeffm = 0.28
     jetCoeffr = math.pow((rhoJet * velocityJet * velocityJet)/ (rho * fsv * fsv), 1/2)
     jetStartPoint = math.pow(-math.tan(math.atan(lastCamberLineSlope) - aoa) / (jetCoeffA * math.pow(jetCoeffr * heightJet, 1-jetCoeffm) * jetCoeffm), 1 / (jetCoeffm - 1))
@@ -83,7 +69,7 @@ def jetModel(lastCamberLineSlope, lastCamberLine, aoa):
     jetY = []
     intXStartPoint = 0
     while(True):
-        if intXStartPoint < math.pow(-math.tan(math.atan(lastCamberLineSlope) - aoa) / (jetCoeffA * math.pow(jetCoeffr * heightJet, 1-jetCoeffm) * jetCoeffm), 1 / (jetCoeffm - 1)):
+        if intXStartPoint < jetStartPoint:
             intXStartPoint += 1
         else:
             break
@@ -109,6 +95,7 @@ def twoDimentionalAirfoil(aoa):
     yCamber = [number * normalizationVal for number in yCamber]
     xCamber = [number * normalizationVal for number in xCamber] 
     numberOfPoints = len(xCamber)
+
     for a in range(0, numberOfPoints):
         
         if xCamber[a] > (1 - percFlap/100):
@@ -157,11 +144,7 @@ def twoDimentionalAirfoil(aoa):
 
     cl2 = 2 * math.pi * (aoa + cl2 / math.pi)
 
-    gammaAirfoil= []
-    for a in range (0, numberOfPoints):
-        for n in range(0, numberOfPoints):
-            gammaAirfoil.append(2 * fsv * (anot * (1 + math.cos(tetha[a])) / math.sin(tetha[a]) + an[n] * math.sin(n * tetha[a])))
-
+   
     jetCurve = []
 
     for a in range(0, numberOfPoints):
@@ -170,18 +153,6 @@ def twoDimentionalAirfoil(aoa):
     x = []
     jetCurveTetha = []
     Acoef = camberLineSlope[numberOfPoints-2] - aoa
-
-    '''
-    mx = 1
-    step = 0.005
-    yShift =  Acoef * airfoilLen / nExp - yCamber[-1]
-    for a in np.arange(0, mx + step, step):
-        x.append( ((mx - a) / airfoilLen)  + 0.000000000000000000001)
-    for a in range(0, int(mx / step)):
-        jetCurveTetha.append(Acoef * pow(math.e, nExp * (1 / (x[a]) - airfoilLen) / airfoilLen))
-        jetCurve.append((Acoef * airfoilLen / nExp) * (pow(math.e, nExp * (1 / (x[a]) - airfoilLen) / airfoilLen)) - yShift)
-    '''
-
     jetappendX, jetappendY, jetInteractionPoints = jetModel(camberLineSlope[-1], yCamber[-1], aoa)
     for a in range (0, jetInteractionPoints):
         jetCurve.append(jetappendY[a])
@@ -196,19 +167,6 @@ def twoDimentionalAirfoil(aoa):
     totalX.extend(xCamber)
     totalX.extend(x)
 
-    '''
-    for a in range(0, int(mx/step)):
-        totalX.append( 1 / x[a])
-    plt.clf()
-    plt.plot(totalX, jetCurve, marker='o', linestyle='-', color='b')  # Line plot with markers
-
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.title('Plot of Y vs X')
-    plt.grid(True)
-
-    plt.show()
-    '''
     newAn = []
     tetha = []
     for a in range(0, numberOfPoints):
@@ -216,7 +174,7 @@ def twoDimentionalAirfoil(aoa):
     tetha.append(math.pi)
 
     deltaJ = rhoJet * velocityJet * velocityJet * heightJet - rho * fsv * fsv * heightJet
-    deltaCj = deltaJ / (rho * fsv * fsv * airfoilLen)
+    deltaCj = -deltaJ / (rho * fsv * fsv * airfoilLen)
     if deltaCjOverride != 0:
         deltaCj = deltaCjOverride
     newAn.append(0)
@@ -243,27 +201,13 @@ def twoDimentionalAirfoil(aoa):
             newAn[a] = newAn[a] + 2/math.pi * camberLineSlope[b] * (tetha[b+1] - tetha[b]) * math.cos(a * tetha[b])
     newAn = [number * 1 for number in newAn]
     clNew = math.pi * (2 * newAn[0] + newAn[1])
-
-    #print("The coefficient of lift of our unblown airfoil will be =", cl)
-    #print("The coefficient of lift of our blown airfoil will be =", clNew)
-
     return(clNew, cl)
 
-print(twoDimentionalAirfoil(10*math.pi / 180))
 
 cl1, cl1old= twoDimentionalAirfoil(1*math.pi / 180)
 cl2, cl2old= twoDimentionalAirfoil(2 * math.pi / 180)
 
 slope = (cl2 - cl1) / (1 * math.pi / 180)
-print(slope)
-'''
-clAll = []
-angles = []
-for a in range(-100, 100):
-    b, d = twoDimentionalAirfoil(a / 10 * math.pi / 180)
-    clAll.append(d)
-    angles.append(a)
-'''
 #we begin the 3D analysis beyond this part
 
 def chordVarFunc(numberOfSpanControlPoints):
@@ -277,30 +221,13 @@ def aoaVarFunc(numberOfSpanControlPoints):
     aoa = []
 
     for a in range(0, numberOfSpanControlPoints):
-        aoa.append(1 * math.pi / 180)
+        aoa.append(5 * math.pi / 180)
     return(aoa)
 
 cl1, cl1old= twoDimentionalAirfoil(1*math.pi / 180)
 cl2, cl2old= twoDimentionalAirfoil(2 * math.pi / 180)
 
-'''
-clAll = []
-angles = []
-for a in range(-100, 100):
-    b, d = twoDimentionalAirfoil(a / 10 * math.pi / 180)
-    clAll.append(d)
-    angles.append(a)
-
-plt.clf()
-plt.plot(angles, clAll, marker='o', linestyle='-', color='b')  # Line plot with markers
-
-plt.xlabel('X')
-plt.ylabel('Y')
-plt.title('Plot of Y vs X')
-plt.grid(True)
-plt.show()
-'''
-numberOfSpanControlPoints = 1000
+numberOfSpanControlPoints = 100
 jetWidth = 5    #This is the width of the individual region that is under the effect of the jet
 openWidth = 0    #This is the width of the individual region that is not under the effect of the jet
 #Both above quantities are expressed in terms of wingspan / numberOfSpanPoints
@@ -309,14 +236,13 @@ wingspan = 10
 Acoefs = []
 tetha = []
 chordVar = []
-ar = 10     #Aspect Ratio
+ar = wingspan / airfoilLen     #Aspect Ratio
 chordVar = chordVarFunc(numberOfSpanControlPoints)
 aoaKnot = []
 slopeM = []
 aoaVar = []
 aoaVar = aoaVarFunc(numberOfSpanControlPoints)
 b = 0
-print((cl2old - cl1old) / (1 * math.pi / 180), (cl2 - cl1) / (1 * math.pi / 180))
 for a in range (0, numberOfSpanControlPoints):
     if b < openWidth:
         slopeM.append((cl2old - cl1old) / (1 * math.pi / 180))
@@ -337,33 +263,23 @@ for a in range(0, numberOfSpanControlPoints):
         if b == jetWidth + openWidth:
             b = 0
 
-resolution = 100
-for a in range(0, int(math.pi * resolution)):
-    tetha.append(a/resolution)
-t = 0
-u = 0
-for b in range(0, numberOfSpanControlPoints - 1):
-    for a in range(0, len(tetha) - 1):
-        t += (math.sin(tetha[a]) * math.sin(b * tetha[a]) * (aoaVar[b] - aoaKnot[b]) * (tetha[a+1] - tetha[a]))
-        u += (4 * wingspan / (slopeM[b] * chordVar[b])) * math.sin(tetha[a]) * (tetha[a+1] - tetha[a])
-    Acoefs.append(2 / math.pi * (t / (u - b / 2 + 0.000000000000001)))
-    t = 0
-    u = 0
-
-d = 0
-tau = []
-for b in range(0, len(tetha) - 1):
-    for a in range(0, numberOfSpanControlPoints - 1):
-        d += 2 * wingspan * fsv * Acoefs[a] * math.sin(a * tetha[b])
-    tau.append(d)
-    d = 0
-
-totCl = 0
-for a in range(0, len(tetha) - 1):
-    totCl += tau[a] * 2 / (fsv) * (tetha[a+1] - tetha[a])
-
-inducedDrag = 0
-for a in range(0, len(tetha) - 1):
-    inducedDrag += math.pi * ar * a * Acoefs[a] * Acoefs[a]
-print(totCl, inducedDrag, cl1, cl1old)
-print(twoDimentionalAirfoil(10 * math.pi / 180))
+tetha = []
+m0,alpha0=slopeM[1] , aoaKnot[1]
+n=500   #Resilutiuon of th jet
+rhs= aoaVar[1]-alpha0
+rhs_mat=np.full((n,1),rhs)
+for a in range(1, n+1):
+    tetha.append(a * math.pi / n)
+c_mat=[]
+for beta in tetha:
+    r_mat=[]
+    for j in range(1,2*n,2):
+        e=math.sin(j*beta)*((j/math.sin(beta))+(4*wingspan/(m0*airfoilLen)))
+        r_mat.append(e)
+    c_mat.append(r_mat)
+coeff=np.linalg.solve(c_mat,rhs_mat)
+cl=coeff[0]*wingspan*math.pi/airfoilLen
+cdi=0
+for i in range(0,len(coeff)):
+    cdi+=(2*i+1)*(coeff[i]*coeff[i])*math.pi*wingspan/airfoilLen
+print(cl,"and", cdi)
