@@ -465,7 +465,7 @@ def problem(params):
     else:
         print(f"Twist/chord file not found at {twist_file}; proceeding with global airfoil data.")
     # chord_fun = lambda r: chord_A * math.exp(-chord_alpha * (r**2))
-    chord_fun = lambda r:  -0.000001*r**4 + 0.000166*r**3 - 0.006179*r**2 + 0.029559*r + 4.735552
+    chord_fun = lambda r:  -4984.325*r**4 + 1582.915*r**3 - 291.735*r**2 + 14.513*r + 0.0196
     # theta_fun = lambda r: math.radians(20.0) * (1 - (r - R_hub)/(R - R_hub))  # 20° twist
     theta_fun = lambda r: (-19654967.194*r**4 + 2358240.470*r**3 - 87934.197*r**2 + 420.644*r + 67.390550)*math.pi/180
     # theta_fun = lambda r: 0  # constant pitch distribution
@@ -536,7 +536,7 @@ def problem(params):
 
     # efficiency penalties (0 if above target)
     P_eta1 = np.maximum(1-eta1, 0.0)**2
-    P_eta2 = np.maximum(1-eta2, 0.0)**2
+    P_eta2 = 2*np.maximum(1-eta2, 0.0)**2
 
     # Axial velocity penalties (encourage higher average jet velocity)
     # target_Vj1 = 40.0
@@ -548,7 +548,7 @@ def problem(params):
     # weights – tune these to trade off thrust vs efficiency
     w_T   = 5
     w_P = 0
-    w_eta = 2.5
+    w_eta = 5
     w_vj = 2.0
 
     cost = w_T * (P_T1 + P_T2) + w_P * (P_P) + w_eta * (P_eta1 + P_eta2) + w_vj * (P_Vj1 + P_Vj2)
@@ -595,14 +595,14 @@ if __name__ == "__main__":
         # Pitch at cruise (radians)
         0.5,
         # Operating Parameters
-        25000,   # RPM at sea level
+        20000,   # RPM at sea level
         20000    # RPM at cruise
     ]
 
     bounds = [
         (-0.3, 1.5),
         (-0.3, 1.5),
-        (1, 60000),      # rpm_sea
+        (1, 50000),      # rpm_sea
         (1, 40000)        # rpm_cruise
     ]
 

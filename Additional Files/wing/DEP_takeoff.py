@@ -188,10 +188,10 @@ def twoDimentionalAirfoil(aoa):
 fsv = 20 #free stream velocity in m/s
 rho = 1.225
 rhoJet = 1.1
-percFlap = 38 #Percentage of the wing that is a flap
-flapAngle = 25 * math.pi / 180 #angle of the flaps
+percFlap = 30 #Percentage of the wing that is a flap
+flapAngle = 20 * math.pi / 180 #angle of the flaps
 propellerDia = 0.13
-velocityJet = 50
+velocityJet = 57
 airfoilLen = 0.1 #Length of the airfoil or the chord length
 wingspan = 1.25
 AoA = 7 * math.pi / 180  #Angle of attack in radians
