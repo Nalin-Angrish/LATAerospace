@@ -1,10 +1,16 @@
 import numpy as np
 import math
-from WingParameters import getParam
-from Values_from_2d import getValue_2d
+from extraction import getvalue
 
-c,b,Q,AoA=getParam()
-m0,alpha0=getValue_2d()
+c=float(input("Enter Chord Length:"))
+b=float(input("Enter Span Length:"))
+Q=float(input("Enter Free Stream Velocity:"))
+AoA=float(input("Enter Angle of Attack:"))
+
+cl,aoa=getvalue()
+m0,alpha_l0=np.polyfit(cl,aoa,1)
+m0,alpha0 = (1/m0),alpha_l0
+
 alpha0=-3.031
 n=1000
 rhs= math.radians(AoA-alpha0)

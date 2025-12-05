@@ -1,10 +1,73 @@
-# Files
-The following files inside the "Additional Files" folder have the following purpose:
-- `bin/`: Additional binaries, open source tools
-- `data/`: Data input files, airfoils, etc.
-- `out/`: OpenVSP outputs
-- `propulsion/`: Code related to our approach to propulsion technology. Code for Evaluating Propellers.
-- `VBM/`: Ansys Project for VBM
-- `wing/`: Code related to our approach to wing design.
-- `WingAnalysis/`: Ansys Project for Wing Cl evaluation
-- `setup.ps1`: Powershell script for initializing python bindings, along with the OpenVSP binaries
+# Project Structure
+
+This repository contains tools for **Propulsion (BEMT/XFOIL-based propeller analysis)** and **Wing Aerodynamics (VLM/VSM/DEP studies)**.
+
+---
+
+## 📁 Root Directory
+
+
+### Root Files
+- **requirements.txt** - Python dependencies for the project  
+- **README.md** - Project documentation  
+- **Additional Files** - Organized files for the project
+
+---
+
+## 🚀 `propulsion/` - Propeller & BEMT Analysis
+
+Tools for **Propeller Design, Analysis, and Optimization** using **Blade Element Momentum Theory (BEMT)** and **XFOIL**.
+
+
+### Key Files
+- **Airfoils/** - Airfoil coordinate data for propeller sections  
+- **Propeller/** - Our Arbitrary propeller geometry and related data  
+- **bemt_dynamic_airfoil_optimization.py** - BEMT-based Collective and RPM optimization for an arbitrary propeller (with data given in `Propeller/`) 
+- **bemt_general_optimization.py** - BEMT-based Collective and RPM optimization for a propeller with a general airfoil (NACA4412)  
+- **bemt_rmit.py** - Comparison of our algorithm to the performance observed in the Paper by RMIT
+- **bemt_with_xfoil.py** - BEMT coupled with XFOIL for viscous airfoil data  
+- **propeller_data.csv** - The propeller performance measurements as observed in the Paper by RMIT  
+- **xfoil_final.py** - Python wrapper for running XFOIL  
+- **xfoil.exe** - XFOIL executable (Windows)
+
+---
+
+## ✈️ `wing/` - Wing Aerodynamics & DEP Studies
+
+Contains **2D/3D wing aerodynamic solvers**, **DEP (Distributed Electric Propulsion)** simulations, and **vortex methods**.
+
+
+### Key Files
+- **Airfoils/** - Airfoil coordinate files for wing analysis  
+- **DEP_2D.py** - 2D DEP aerodynamic analysis  
+- **DEP_cruise.py** - Cruise condition analysis for our chosen DEP configuration  
+- **DEP_takeoff.py** - Takeoff condition analysis for our chosen DEP configuration  
+- **DEP_paper_2D_flat.py** - In the paper by Spence, they mentioned a formula for a flat blown airfoil. This evaluates that formula to get the `Cl` according to his observations.
+- **helper.py** - Shared utility function to read camber line from csv
+- **VLM_2d.ipynb** - 2D Vortex Lattice Method notebook  
+- **VSM_wing.py** - Full Vortex Sheet Method wing model  
+- **VSM_wing_simplified.py** - A slightly simplified version of VSM solver  
+
+---
+
+## 🛩️ `wing_no_jet/` - Wing Analysis without Jet/Prop Effects
+
+Wing aerodynamic analysis **Excluding jet/propeller slipstream effects** for baseline comparisons.
+
+
+### Key Files
+- **Airfoils/** - Airfoil datasets  
+- **Gamma.py** - Circulation distribution calculation  
+- **extraction.py** - Data extraction and post-processing  
+- **helper.py** - Utility functions  
+
+---
+
+## ⚙️ Setup & Usage (Basic)
+
+```bash
+pip install -r requirements.txt
+cd propulsion
+python bemt_general_optimization.py
+```
+This can be extrapolated to run all other files as well.
