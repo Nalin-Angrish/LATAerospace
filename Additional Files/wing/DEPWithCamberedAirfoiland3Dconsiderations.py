@@ -6,6 +6,12 @@ Assumptions-
 
 Differences from the paper implementation-
 - The camber of the airfoil can be a be non symmetrical airfoil
+
+Variables to change - 
+- Angle of attack in the aoaVarFunc
+- Chord in the chordVarFunc
+- camber (airfoil)
+
 """
 
 import csv
@@ -283,3 +289,4 @@ cdi=0
 for i in range(0,len(coeff)):
     cdi+=(2*i+1)*(coeff[i]*coeff[i])*math.pi*wingspan/airfoilLen
 print(cl,"and", cdi)
+
