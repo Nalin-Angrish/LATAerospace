@@ -9,7 +9,7 @@ def getvalue():
         aoa = aoa* math.pi / 180
         aoa1.append(aoa)
         # Normalized camber line coordinates
-        xCamber, yCamber = returnCamberLine("naca2412-il.csv")
+        xCamber, yCamber = returnCamberLine("Airfoils/NACA4412.csv") # Can be changed to any airfoil file (like NACA23015.csv)
         numberOfPoints = len(xCamber)
 
         # We solve the vortex sheet equation through linear algebra A * gamma = velTerms

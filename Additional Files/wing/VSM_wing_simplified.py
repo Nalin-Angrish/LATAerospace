@@ -7,7 +7,7 @@ from helper import returnCamberLine
 aoa = 8 * math.pi / 180
 
 # Normalized camber line coordinates
-xCamber, yCamber = returnCamberLine("../data/naca2412.csv")
+xCamber, yCamber = returnCamberLine("Airfoils/NACA2412.csv")
 numberOfPoints = len(xCamber)
 
 # We solve the vortex sheet equation through linear algebra A * gamma = velTerms

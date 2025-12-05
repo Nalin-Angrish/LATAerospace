@@ -1,8 +1,14 @@
+import os
 import math
 import numpy as np
-from scipy.interpolate import interp1d
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
+from scipy.optimize import minimize
+from prettytable import PrettyTable
+
+_cl_interp = None
+_cd_interp = None
 
 def load_airfoil_data(airfoil_file_path):
     try:
@@ -57,13 +63,6 @@ def load_airfoil_data(airfoil_file_path):
         import traceback
         traceback.print_exc()
         return None, None
-
-
-# This file should contain columns: Alpha (deg), Cl, Cd
-DEFAULT_AIRFOIL_FILE = 'Airfoils/CLARKY.dat'
-
-_cl_interp = None
-_cd_interp = None
 
 def prandtl_tip_loss(r, R, B, phi):
     """Prandtl's tip loss factor."""
@@ -310,14 +309,114 @@ def integrate_blade(B, chord_fun, theta_fun, R, R_hub, N, rho, V, rpm,
 
     return T_total, Q_total, diags, nodes
 
+
+def problem(params):
+    # Operating Parameters
+    pitch_sea = params[0]
+    pitch_cruise = params[1]
+    rpm_sea = params[2]
+    rpm_cruise = params[3]
+
+    table = PrettyTable(["Condition", "Velocity (m/s)", "RPM", "Thrust (N)", "Power (kW)", "Efficiency (%)", "Avg. Jet Vel (m/s)"])
+    
+    # chord_fun = lambda r: chord_A * math.exp(-chord_alpha * (r**2))
+    chord_fun = lambda r:  0.02
+    # theta_fun = lambda r: math.radians(20.0) * (1 - (r - R_hub)/(R - R_hub))  # 20° twist
+    theta_fun = lambda r: 0
+    # theta_fun = lambda r: 0  # constant pitch distribution
+    alpha0_fun = lambda r: 0.0
+
+    # Sea level conditions for reference
+    rho = 1.225
+    V = 20
+    
+    n = rpm_sea / 60.0
+    
+    J = V / (n * D)
+    T, Q, diags, nodes = integrate_blade(
+        B, chord_fun, lambda r: theta_fun(r) + pitch_sea, R, R_hub, N, rho, V, rpm_sea,
+        pitch_beta=0.0, alpha0_fun=alpha0_fun,
+        Cl_alpha=2*math.pi, Cd0=0.008, Cd_k=0.02
+    )
+    a_vals = [d['a'] for d in diags if 'a' in d]
+    avg_a = sum(a_vals)/len(a_vals) if a_vals else 0.0
+    V_axial = V * (1 + avg_a)
+    V_j = 2*V_axial - V
+
+    P = Q * (2.0 * math.pi * n)  # Power in Watts
+    eta = (T * V) / P if P > 1e-6 else 0.0
+    
+    table.add_row(["Sea Level", f"{V}", f"{rpm_sea}", f"{T*N_props:.2f}", f"{P/1000*N_props:.2f}", f"{eta*100:.2f}", f"{V_j:.2f}"])
+    out1 = [T, P/1000, eta, V_j]
+
+
+    # Cruise conditions for reference
+    rho = 0.909
+    V = 80
+    
+    n = rpm_cruise / 60.0
+    
+    J = V / (n * D)
+    T, Q, diags, nodes = integrate_blade(
+        B, chord_fun, lambda r: theta_fun(r) + pitch_cruise, R, R_hub, N, rho, V, rpm_cruise,
+        pitch_beta=0.0, alpha0_fun=alpha0_fun,
+        Cl_alpha=2*math.pi, Cd0=0.008, Cd_k=0.02
+    )
+    a_vals = [d['a'] for d in diags if 'a' in d]
+    avg_a = sum(a_vals)/len(a_vals) if a_vals else 0.0
+    V_axial = V * (1 + avg_a)
+    V_j = 2*V_axial - V
+
+    P = Q * (2.0 * math.pi * n)  # Power in Watts
+    eta = (T * V) / P if P > 1e-6 else 0.0
+    
+    table.add_row(["Cruise", f"{V}", f"{rpm_cruise}", f"{T*N_props:.2f}", f"{P/1000*N_props:.2f}", f"{eta*100:.2f}", f"{V_j:.2f}"])
+    out2 = [T, P/1000, eta, V_j]
+    print(table)
+
+    # Define the objective function that is meant to be minimized
+    T1, P1, eta1 = out1[0]*N_props, out1[1]*N_props, out1[2]
+    T2, P2, eta2 = out2[0]*N_props, out2[1]*N_props, out2[2]
+
+    # thrust penalties (0 inside band of 75-95N)
+    P_T1 = max(np.abs(T1 - 85) - 10, 0)**2
+    P_T2 = max(np.abs(T2 - 85) - 10, 0)**2
+
+    # power penalties (minimize power consumption)
+    P_P = (P1 / 1000.0)**2 + 2 * (P2 / 1000.0)**2
+
+    # efficiency penalties (0 if above target)
+    P_eta1 = np.maximum(1-eta1, 0.0)**2
+    P_eta2 = np.maximum(1-eta2, 0.0)**2
+
+    # Axial velocity penalties (encourage higher average jet velocity)
+    # target_Vj1 = 40.0
+    # target_Vj2 = 100.0
+    P_Vj1 = np.maximum(100 - out1[3], 0.0)**2 / 20**2
+    # P_Vj2 = np.maximum(100 - out2[3], 0.0)**2 / 20**2
+    P_Vj2 = 0.0  # No penalty at cruise
+
+    # weights – tune these to trade off thrust vs efficiency
+    w_T   = 1.5
+    w_P = 1.0
+    w_eta = 2.5
+    w_vj = 2.0
+
+    cost = w_T * (P_T1 + P_T2) + w_P * (P_P) + w_eta * (P_eta1 + P_eta2) + w_vj * (P_Vj1 + P_Vj2)
+    return float(cost)
+
+def problem_wrapper(params):
+    scaled_params = u_to_params(params)
+    return problem(scaled_params)
+
+
+    
 # ============ Example Run ============
 if __name__ == "__main__":
-    import os
-    exp_path = os.path.join(os.path.dirname(__file__), 'propeller_data.csv')
-    exp_data = pd.read_csv(exp_path, delimiter=' ', header=0)
     # Try to load airfoil data file
+    # This file should contain columns: Alpha (deg), Cl, Cd
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    airfoil_file = os.path.join(script_dir, DEFAULT_AIRFOIL_FILE)
+    airfoil_file = os.path.join(script_dir, r"Airfoils/NACA4412.dat")
     
     print("="*60)
     print("BEMT ANALYSIS WITH AIRFOIL DATA")
@@ -326,65 +425,111 @@ if __name__ == "__main__":
     # Load airfoil data from combined file
     _cl_interp, _cd_interp = load_airfoil_data(airfoil_file)
     
+    N_props = 6 # Number of propellers in DEP
     # Propeller parameters
     B = 3
-    R = 1.5
-    R_hub = 0.375
-    rho = 1.225
-    rpm = 500
-    V_start = 0.0        # Nominal RPM
-    V_end = 21.0 
-    step = 1          # Low velocity for propeller mode
+    R = 0.065  # 6.5 cm radius
+    R_hub = 0.00539
     N = 10  # Blade elements
-    A = math.pi * (R**2 )
-    n = rpm / 60.0
+    A = math.pi * (R**2)
     D = 2 * R
-
-    # Blade geometry functions
-    chord_fun = lambda r: 0.000000*r**4 + 0.493827*r**3 - 1.750000*r**2 + 1.835317*r - 0.371763
-    theta_fun = lambda r: 0.31
-    alpha0_fun = lambda r: 0.0
-
+        
     print(f"\nPropeller Configuration:")
     print(f"  Blades: {B}")
     print(f"  Radius: {R} m, Hub: {R_hub} m")
-    print(f"  Chord: 0.2 m (constant)")
-    print(f"  Twist: Linear {math.degrees(theta_fun(R_hub)):.1f}° (root) to {math.degrees(theta_fun(R)):.1f}° (tip)")
-    
-    df = pd.DataFrame(columns=['Velocity (m/s)', 'Thrust (N)', 'Torque (Nm)', 'Power (W)',
-                               'Efficiency', 'CT', 'CP', 'J'])
-    print(f"\nOperating Condition:")
-    print(f"  Velocity: {V_start} to {V_end} m/s")
-    print(f"  RPM: {rpm}")
     print(f"  Blade elements: {N}")
+    print("="*60)
+
+    init_params = [
+        # Pitch at sea (radians)
+        0.1,
+        # Pitch at cruise (radians)
+        0.5,
+        # Operating Parameters
+        25000,   # RPM at sea level
+        20000    # RPM at cruise
+    ]
+
+    bounds = [
+        (-0.3, 1.5),
+        (-0.3, 1.5),
+        (1, 50000),      # rpm_sea
+        (1, 40000)        # rpm_cruise
+    ]
+
+    log = []
+
+    rpm_indices = (2,3)
+
+    eps = 1e-12
+    scales = np.ones_like(init_params)
+
+    for i in range(len(init_params)):
+        if i in rpm_indices:
+            scales[i] = 1.0   # placeholder; not used for log-params
+        else:
+            mag = max(abs(init_params[i]), eps)
+            order = math.floor(math.log10(mag))
+            scales[i] = 10.0 ** order
+
+    # Example print to inspect scales
+    # print("scales for non-RPM params:", scales)
+
+    # ---------- Convert real bounds -> optimizer-bounds ----------
+    # For params other than rpm: bound in scaled space is (low/scale, high/scale)
+    # For rpm params: we use u = log10(rpm) so bounds are (log10(low), log10(high))
+    bounds_opt = []
+    for i, (low, high) in enumerate(bounds):
+        if i in rpm_indices:
+            low_u = math.log10(max(low, 1e-12))
+            high_u = math.log10(max(high, 1e-12))
+            bounds_opt.append((low_u, high_u))
+        else:
+            low_u = None if low is None else (low / scales[i])
+            high_u = None if high is None else (high / scales[i])
+            bounds_opt.append((low_u, high_u))
     
-    for V in np.arange(V_start, V_end, step):
-        J = V / (n * D)
-        T, Q, diags, nodes = integrate_blade(
-            B, chord_fun, theta_fun, R, R_hub, N, rho, V, rpm,
-            pitch_beta=0.0, alpha0_fun=alpha0_fun,
-            Cl_alpha=2*math.pi, Cd0=0.008, Cd_k=0.02
-        )
-        P = Q * (2.0 * math.pi * n)  # Power in Watts
-        eta = (T * V) / P if P > 1e-6 else 0.0
-        CT = T / (rho * n**2 * D**4)
-        CP = P / (rho * n**3 * D**5)
-        df = pd.concat([df, pd.DataFrame([{'Velocity (m/s)': V, 'Thrust (N)': T, 'Torque (Nm)': Q,
-                        'Power (W)': P, 'Efficiency': eta, 'CT': CT, 'CP': CP, 'J': J}])], ignore_index=True)
-        print(f"\nVelocity: {V} m/s")
-        print(f"  Thrust: {T:.2f} N")
-        print(f"  Torque: {Q:.2f} Nm")
-        print(f"  Power: {P/1000:.2f} kW")
-    ax = df.plot(x='J', y='CT', legend=None, style='b-o')
-    exp_data.plot(x='J', y='CT', style='r-s', ax=ax, legend=None)
-    df.plot(x='J',y='CP',ax=ax,legend=None)
-    exp_data.plot(x='J',y='CP',ax=ax)
-    plt.ylabel('$C_T$ , $C_P$')
-    ax2 = ax.twinx()
-    df.plot(x='J', y='Efficiency', style='g-o', ax=ax, legend=None)
-    exp_data.plot(x='J', y='eta', style='m-s', ax=ax2, legend=None)
-    plt.xlabel('J')
-    plt.ylabel('$eta$')
-    plt.title('thrust coeff vs Advance Ratio')
-    plt.show()
- 
+    bounds_scaled = []
+    for (low, high), s in zip(bounds, scales):
+        if low is None and high is None:
+            bounds_scaled.append((None, None))
+        else:
+            low_s  = None if low  is None else low  / s
+            high_s = None if high is None else high / s
+            bounds_scaled.append((low_s, high_s))
+
+    def u_to_params(u):
+        params = np.empty_like(u)
+        for i in range(len(u)):
+            if i in rpm_indices:
+                params[i] = 10.0 ** u[i]
+            else:
+                params[i] = u[i] * scales[i]
+        return params
+
+    init_u = np.empty_like(init_params)
+    for i in range(len(init_params)):
+        if i in rpm_indices:
+            init_u[i] = math.log10(init_params[i])
+        else:
+            init_u[i] = init_params[i] / scales[i]
+
+    res = minimize(
+        problem_wrapper,
+        init_u,
+        method='L-BFGS-B',
+        bounds=bounds_opt,
+        options={'maxiter': 500, 'ftol': 1e-8}
+    )
+
+    # ---------- Convert back to real params ----------
+    u_opt = res.x
+    params_opt = u_to_params(u_opt)
+
+    print("\nOptimization Result:")
+    print(res)
+    problem(params_opt)
+    print("Pitch Collective at Sea Level (deg):", round(math.degrees(params_opt[0]),2))
+    print("Pitch Collective at Cruise (deg):", round(math.degrees(params_opt[1]),2))
+    print("RPM at Sea Level:", params_opt[2])
+    print("RPM at Cruise:", params_opt[3])
