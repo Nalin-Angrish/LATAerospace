@@ -63,6 +63,20 @@ Wing aerodynamic analysis **Excluding jet/propeller slipstream effects** for bas
 
 ---
 
+## 🛩️ `propeller_simulation.zip` - ANSYS simulation of our propeller
+
+Simulation of the optimal takeoff conditions as described by the output of `propulsion/bemt_dynamic_airfoil_optimization.py`.
+
+## 🛩️ `wing_simulation.zip` - ANSYS simulation of our wing without blown effects
+
+Simulation of a 3D wing as described by the output of `wing_no_jet/Gamma.py`.
+
+## 🛩️ `dep_simulation.zip` - ANSYS simulation of our wing with blown effects
+
+Simulation of the optimal wing as described by the output of `wing/DEP_takeoff.py`.
+
+---
+
 ## ⚙️ Setup & Usage (Basic)
 
 ```bash
