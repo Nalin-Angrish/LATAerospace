@@ -2,6 +2,17 @@
 
 This repository contains tools for **Propulsion (BEMT/XFOIL-based propeller analysis)** and **Wing Aerodynamics (VLM/VSM/DEP studies)**.
 
+## Contributors
+Work was done on this project by 8 students of IIT Ropar:
+- [Dharmansh Vyas](https://www.linkedin.com/in/dharmansh-vyas-babab8258/) (4th Year, Mechanical Engineering)
+- [Eakamjit Singh](https://www.linkedin.com/in/eakamjit-singh/) (3rd Year, Mechanical Engineering)
+- [Nalin Angrish](https://www.linkedin.com/in/nalin-angrish/) (3rd Year, Mechanical Engineering)
+- [Ponnathavan S](https://www.linkedin.com/in/ponnathavans/) (3rd Year, Engineering Physics)
+- [Amey Kemkar](https://www.linkedin.com/in/amey-kemkar-2ab222313/) (2nd Year, Mechanical Engineering)
+- [Aryan Deshmukh](https://www.linkedin.com/in/aryan-deshmukh-ba3667321/) (2nd Year, Metallurgical and Materials Engineering)
+- [Ishan Gangwani](https://www.linkedin.com/in/ishan-gangwani-519424323/) (2nd Year, Mechanical Engineering)
+- [Kian Sparrow](https://www.linkedin.com/in/kian-sparrow-4a6361320/) (2nd Year, Engineering Physics)
+
 ---
 
 ## 📁 Root Directory
